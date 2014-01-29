@@ -40,13 +40,100 @@ int menang(const int papan[25]) {
     return 0;
 }
 
-main()
-{
-    printf("Komputer : O dan Kamu : X\n");
-    printf("Mau bermain ke (1) atau ke (2)? ");
-    int player=0;
-    scanf("%d",&player);
-    printf("\n");
+int minimax(int papan[25], int player) {
+    int pemenang = menang(papan);
+    if(pemenang != 0) return pemenang*player;
 
-    return(0);
+    int pindah = -1;
+    int skor = -2;
+    int i;
+    for(i = 0; i < 9; i++) {
+        if(papan[i] == 0) {
+            papan[i] = player;
+            int thisSkor = -minimax(papan, player*-1);
+            if(thisSkor > skor) {
+                skor = thisSkor;
+                pindah = i;
+            }
+            papan[i] = 0;
+        }
+    }
+    if(pindah == -1) return 0;
+    return skor;
+}
+
+void gerak_komputer(int papan[25]) {
+    int pindah = -1;
+    int skor = -2;
+    int i;
+    for(i = 0; i < 25; ++i) {
+        if(papan[i] == 0) {
+            papan[i] = 1;
+            int tempSkor = -minimax(papan, -1);
+            papan[i] = 0;
+            if(tempSkor > skor) {
+                skor = tempSkor;
+                pindah = i;
+            }
+        }
+    }
+    
+    papan[pindah] = 1;
+}
+
+void gerak_player(int papan[25]) {
+    int pindah = 0;
+    do {
+        printf("Pindah ke kotak [0..24]: ");
+        scanf("%d", &pindah);
+        printf("\n");
+    } while (pindah >= 25 || pindah < 0 && papan[pindah] == 0);
+    papan[pindah] = -1;
+}
+
+int main() {
+	int pilih;
+    int papan[25] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+    
+    gotoxy(33,8);printf("TIC TAC TOE\n");
+    gotoxy(32,9);printf("=====================\n");
+	gotoxy(33,10);printf("1. Mulai Permainan\n");
+    gotoxy(33,11);printf("2. Keluar\n");
+    gotoxy(32,12);printf("------------------\n");
+    gotoxy(33,13);printf("Pilih : ");scanf("%i",&pilih);
+    if (pilih == 1)
+    {
+    	clrscr();
+    	//Simbol komputer ditandai dengan O dan Kamu dengan X
+		gotoxy(65,1);printf("Komputer : O");
+		gotoxy(65,2);printf("Kamu     : X");
+		printf("\nBermain ke (1) atau ke (2)? ");
+    	int player=0;
+    	scanf("%d",&player);
+    	printf("\n");
+    	unsigned turn;
+    	for(turn = 0; turn < 25 && menang(papan) == 0; ++turn) 
+		{
+        if((turn+player) % 2 == 0)
+            gerak_komputer(papan);
+        else {
+            cetak(papan);
+            gerak_player(papan);
+        	}
+    	}
+    switch(menang(papan)) 
+		{
+        case 0:
+            textcolor(LIGHTBLUE);printf("\nPERMAINAN SERI\n");textcolor(WHITE);
+            break;
+        case 1:
+            cetak(papan);
+            textcolor(LIGHTRED);printf("\nKAMU KALAH\n");textcolor(WHITE);
+            break;
+        case -1:
+            textcolor(LIGHTGREEN);printf("\nSELAMAT KAMU MENANG\n");textcolor(WHITE);
+            break;
+    	}
+	}else
+	return(0);
 }
