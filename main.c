@@ -1,5 +1,20 @@
 #include <stdio.h>
 #include <conio2.h>
+#include <windows.h>
+
+#include "SDL2/SDL.h"
+#include "SDL2/SDL_image.h"
+#include "SDL2/SDL_ttf.h"
+
+#include "main.h"
+
+int init();
+int load_resources();
+void on_event();
+void on_update();
+void on_render();
+int cleanup();
+int finalize();
 
 char isi_kotak(int i) {
     switch(i) {
@@ -92,49 +107,165 @@ void gerak_player(int papan[25]) {
     papan[pindah] = -1;
 }
 
-int main() {
-	int pilih;
-    int papan[25] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+int main(int argc, char* argv[]) {
+	// int pilih;
+ //    int papan[25] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
     
-    gotoxy(33,8);printf("TIC TAC TOE\n");
-    gotoxy(32,9);printf("=====================\n");
-	gotoxy(33,10);printf("1. Mulai Permainan\n");
-    gotoxy(33,11);printf("2. Keluar\n");
-    gotoxy(32,12);printf("------------------\n");
-    gotoxy(33,13);printf("Pilih : ");scanf("%i",&pilih);
-    if (pilih == 1)
-    {
-    	clrscr();
-    	//Simbol komputer ditandai dengan O dan Kamu dengan X
-		gotoxy(65,1);printf("Komputer : O");
-		gotoxy(65,2);printf("Kamu     : X");
-		printf("\nBermain ke (1) atau ke (2)? ");
-    	int player=0;
-    	scanf("%d",&player);
-    	printf("\n");
-    	unsigned turn;
-    	for(turn = 0; turn < 25 && menang(papan) == 0; ++turn) 
-		{
-        if((turn+player) % 2 == 0)
-            gerak_komputer(papan);
-        else {
-            cetak(papan);
-            gerak_player(papan);
-        	}
-    	}
-    switch(menang(papan)) 
-		{
-        case 0:
-            textcolor(LIGHTBLUE);printf("\nPERMAINAN SERI\n");textcolor(WHITE);
-            break;
-        case 1:
-            cetak(papan);
-            textcolor(LIGHTRED);printf("\nKAMU KALAH\n");textcolor(WHITE);
-            break;
-        case -1:
-            textcolor(LIGHTGREEN);printf("\nSELAMAT KAMU MENANG\n");textcolor(WHITE);
-            break;
-    	}
-	}else
-	return(0);
+ //    gotoxy(33,8);printf("TIC TAC TOE\n");
+ //    gotoxy(32,9);printf("=====================\n");
+	// gotoxy(33,10);printf("1. Mulai Permainan\n");
+ //    gotoxy(33,11);printf("2. Keluar\n");
+ //    gotoxy(32,12);printf("------------------\n");
+ //    gotoxy(33,13);printf("Pilih : ");scanf("%i",&pilih);
+ //    if (pilih == 1)
+ //    {
+ //    	clrscr();
+ //    	//Simbol komputer ditandai dengan O dan Kamu dengan X
+	// 	gotoxy(65,1);printf("Komputer : O");
+	// 	gotoxy(65,2);printf("Kamu     : X");
+	// 	printf("\nBermain ke (1) atau ke (2)? ");
+ //    	int player=0;
+ //    	scanf("%d",&player);
+ //    	printf("\n");
+ //    	unsigned turn;
+ //    	for(turn = 0; turn < 25 && menang(papan) == 0; ++turn) 
+	// 	{
+ //        if((turn+player) % 2 == 0)
+ //            gerak_komputer(papan);
+ //        else {
+ //            cetak(papan);
+ //            gerak_player(papan);
+ //        	}
+ //    	}
+ //    switch(menang(papan)) 
+	// 	{
+ //        case 0:
+ //            textcolor(LIGHTBLUE);printf("\nPERMAINAN SERI\n");textcolor(WHITE);
+ //            break;
+ //        case 1:
+ //            cetak(papan);
+ //            textcolor(LIGHTRED);printf("\nKAMU KALAH\n");textcolor(WHITE);
+ //            break;
+ //        case -1:
+ //            textcolor(LIGHTGREEN);printf("\nSELAMAT KAMU MENANG\n");textcolor(WHITE);
+ //            break;
+ //    	}
+	// }
+    
+    /* init phase */ 
+    if (init()) {
+        fprintf(stderr, "Initialization failed!\n");
+    }
+
+    load_resources();
+
+    /* game loop */
+    while(Game.flags.isRunning) {
+        on_event();
+        on_update();
+        on_render();
+        SDL_Delay(1000 / MAX_FPS);
+    }
+
+    /* shutdown phase */
+    cleanup();
+    finalize();
+
+	return 0;
+}
+
+int init() {
+    printf("Initializing...\n");
+    SDL_Init(SDL_INIT_EVERYTHING);
+    IMG_Init(IMG_INIT_JPG | IMG_INIT_PNG);
+    TTF_Init();
+
+    Game.window = SDL_CreateWindow(GAME_TITLE, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 640, 480, SDL_WINDOW_SHOWN);
+    if (Game.window == NULL) {
+        printf("SDL Create Window Error: %s\n", SDL_GetError());
+        return 1;
+    }
+    
+    Game.renderer = SDL_CreateRenderer(Game.window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+    if (Game.renderer == NULL) {
+        printf("SDL Renderer Error: %s\n", SDL_GetError());
+        return 1;
+    }
+
+    Game.keystate = SDL_GetKeyboardState(NULL);
+
+    Game.flags.isRunning = TRUE;
+    Game.flags.isPaused  = FALSE;
+
+    return 0;
+}
+
+int load_resources() {
+    printf("Loading resources...\n");
+
+    /* insert resource here */
+
+    printf("Done.\n");
+    return 0;
+}
+
+void on_event() {
+    SDL_PumpEvents();
+    while (SDL_PollEvent(&Game.event)){
+        if (!Game.flags.isPaused) {
+            /* Specific keydown events */
+            if (Game.event.type == SDL_KEYDOWN) {
+                if(Game.keystate[SDL_SCANCODE_ESCAPE])
+                    Game.flags.isRunning = FALSE;
+
+            }
+
+            /* Object events here! */
+
+            /* End object events */
+
+
+            /* Mouse events */
+            if (Game.event.type == SDL_MOUSEBUTTONDOWN) {
+                //Game.flags.isRunning = 0;
+            }
+        }
+
+        /* If user clicked X button*/
+        if (Game.event.type == SDL_QUIT)
+            Game.flags.isRunning = FALSE;
+    }
+}
+
+void on_update() {
+    if (!Game.flags.isPaused) {
+
+    }
+    else {
+        /* show isPaused control update */
+    }
+}
+
+void on_render() {
+    SDL_RenderClear(Game.renderer);
+
+    if (Game.flags.isPaused) {
+        /* show isPaused screen */
+    }
+    SDL_RenderPresent(Game.renderer);
+}
+
+int cleanup() {
+    SDL_DestroyRenderer(Game.renderer);
+    SDL_DestroyWindow(Game.window);
+
+    return 0;
+}
+
+int finalize() {
+    IMG_Quit();
+    TTF_Quit();
+    SDL_Quit();
+
+    return 0;
 }
