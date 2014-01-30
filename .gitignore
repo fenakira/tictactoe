@@ -17,4 +17,7 @@
 *.out
 *.app
 
-# tes
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
