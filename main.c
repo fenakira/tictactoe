@@ -213,8 +213,8 @@ int init() {
 int load_resources() {
     printf("Loading resources...\n");
 
-    boardTexture[0] = loadTexture("assets\\x.png", Game.renderer);
-    boardTexture[1] = loadTexture("assets\\o.png", Game.renderer);
+    boardTexture[0] = loadTexture("..\\assets\\x.png", Game.renderer);
+    boardTexture[1] = loadTexture("..\\assets\\o.png", Game.renderer);
 
     printf("Done.\n\n");
     return 0;
