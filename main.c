@@ -162,6 +162,7 @@ int main(int argc, char* argv[]) {
     printf("Cleaning up...\n");
     cleanup();
     finalize();
+    printf("Done.\n\n");
 
     printf("Exiting...\n");
 	return 0;
