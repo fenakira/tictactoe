@@ -16,6 +16,8 @@ void on_render();
 int cleanup();
 int finalize();
 
+int papan[5][5];
+
 char isi_kotak(int i) {
     switch(i) {
         case -1:
@@ -160,6 +162,7 @@ int main(int argc, char* argv[]) {
     load_resources();
 
     /* game loop */
+    printf("Starting game...\n");
     while(Game.flags.isRunning) {
         on_event();
         on_update();
@@ -176,16 +179,20 @@ int main(int argc, char* argv[]) {
 
 int init() {
     printf("Initializing...\n");
+
+    printf("Initializing SDL.\n");
     SDL_Init(SDL_INIT_EVERYTHING);
     IMG_Init(IMG_INIT_JPG | IMG_INIT_PNG);
     TTF_Init();
 
+    printf("Creating windows.\n");
     Game.window = SDL_CreateWindow(GAME_TITLE, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 640, 480, SDL_WINDOW_SHOWN);
     if (Game.window == NULL) {
         printf("SDL Create Window Error: %s\n", SDL_GetError());
         return 1;
     }
     
+    printf("Creating renderer.\n");
     Game.renderer = SDL_CreateRenderer(Game.window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
     if (Game.renderer == NULL) {
         printf("SDL Renderer Error: %s\n", SDL_GetError());
@@ -197,6 +204,14 @@ int init() {
     Game.flags.isRunning = TRUE;
     Game.flags.isPaused  = FALSE;
 
+    /* initialize game board */
+    printf("Initializing game props.\n");
+    for (int i = 0; i < 5; ++i) 
+        for (int j = 0; j < 5; ++j) 
+            papan[i][j] = 0;
+
+
+    printf("Done.\n\n");
     return 0;
 }
 
@@ -205,7 +220,7 @@ int load_resources() {
 
     /* insert resource here */
 
-    printf("Done.\n");
+    printf("Done.\n\n");
     return 0;
 }
 
