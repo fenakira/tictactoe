@@ -159,9 +159,11 @@ int main(int argc, char* argv[]) {
     }
 
     /* shutdown phase */
+    printf("Cleaning up...\n");
     cleanup();
     finalize();
 
+    printf("Exiting...\n");
 	return 0;
 }
 
