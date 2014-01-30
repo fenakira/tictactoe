@@ -15,5 +15,6 @@ struct _game {
 
 #define GAME_TITLE      "Tic Tac Toe"
 #define	MAX_FPS			30
+
 #endif
 /* _MAIN_H_ */

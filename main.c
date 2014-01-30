@@ -7,6 +7,7 @@
 #include "SDL2/SDL_ttf.h"
 
 #include "main.h"
+#include "utils.h"
 
 int init();
 int load_resources();
@@ -16,30 +17,17 @@ void on_render();
 int cleanup();
 int finalize();
 
-int papan[5][5];
+#define BOARD_WIDTH     5
+#define BOARD_HEIGHT    5
 
-char isi_kotak(int i) {
-    switch(i) {
-        case -1:
-            return 'X';
-        case 0:
-            return ' ';
-        case 1:
-            return 'O';
-    }
-}
+#define TILE_WIDTH      24
+#define TILE_HEIGHT     24
 
-void cetak(int b[25]) {
-    printf(" %c | %c | %c | %c | %c\n",isi_kotak(b[0]),isi_kotak(b[1]),isi_kotak(b[2]),isi_kotak(b[3]),isi_kotak(b[4]));
-    printf("---+---+---+---+---\n");
-    printf(" %c | %c | %c | %c | %c\n",isi_kotak(b[5]),isi_kotak(b[6]),isi_kotak(b[7]),isi_kotak(b[8]),isi_kotak(b[9]));
-    printf("---+---+---+---+---\n");
-    printf(" %c | %c | %c | %c | %c\n",isi_kotak(b[10]),isi_kotak(b[11]),isi_kotak(b[12]),isi_kotak(b[13]),isi_kotak(b[14]));
-    printf("---+---+---+---+---\n");
-    printf(" %c | %c | %c | %c | %c\n",isi_kotak(b[15]),isi_kotak(b[16]),isi_kotak(b[17]),isi_kotak(b[18]),isi_kotak(b[19]));
-    printf("---+---+---+---+---\n");
-    printf(" %c | %c | %c | %c | %c\n",isi_kotak(b[20]),isi_kotak(b[21]),isi_kotak(b[22]),isi_kotak(b[23]),isi_kotak(b[24]));
-}
+int papan[BOARD_HEIGHT][BOARD_WIDTH];
+
+SDL_Texture* boardTexture[2];
+
+void board_draw(int board[BOARD_HEIGHT][BOARD_WIDTH]);
 
 int menang(const int papan[25]) {
     unsigned menang[24][5] = {{0,1,2,3,4},{5,6,7,8,9},{10,11,12,13,14},{15,16,17,18,19},{20,21,22,23,24},
@@ -210,6 +198,10 @@ int init() {
         for (int j = 0; j < 5; ++j) 
             papan[i][j] = 0;
 
+    /* testing board --REMOVE ME-- */
+    papan[3][2] = 1;
+    papan[3][3] = 1;
+    /* end */
 
     printf("Done.\n\n");
     return 0;
@@ -218,7 +210,8 @@ int init() {
 int load_resources() {
     printf("Loading resources...\n");
 
-    /* insert resource here */
+    boardTexture[0] = loadTexture("assets\\x.png", Game.renderer);
+    boardTexture[1] = loadTexture("assets\\o.png", Game.renderer);
 
     printf("Done.\n\n");
     return 0;
@@ -264,6 +257,10 @@ void on_update() {
 void on_render() {
     SDL_RenderClear(Game.renderer);
 
+    SDL_SetRenderDrawColor(Game.renderer, 255, 255, 255, 255);
+    SDL_RenderFillRect(Game.renderer, NULL);
+
+    board_draw(papan);
     if (Game.flags.isPaused) {
         /* show isPaused screen */
     }
@@ -283,4 +280,17 @@ int finalize() {
     SDL_Quit();
 
     return 0;
+}
+
+void board_draw(int board[BOARD_HEIGHT][BOARD_WIDTH]) {
+    for (int i = 0; i < BOARD_HEIGHT; ++i) {
+        for (int j = 0; j < BOARD_WIDTH; ++j) {
+            if (board[i][j] == 0) {
+                renderTexture2(boardTexture[0], Game.renderer, i * TILE_HEIGHT, j * TILE_WIDTH, TILE_WIDTH, TILE_HEIGHT);
+            }
+            else if (board[i][j] == 1) {
+                renderTexture2(boardTexture[1], Game.renderer, i * TILE_HEIGHT, j * TILE_WIDTH, TILE_WIDTH, TILE_HEIGHT);
+            }
+        }
+    }
 }
