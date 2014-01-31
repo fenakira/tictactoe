@@ -19,7 +19,8 @@ int finalize();
 #define BOARD_WIDTH     5
 #define BOARD_HEIGHT    5
 
-#define TILE_SIZE      24
+#define TILE_SIZE      64
+#define SPACING         2
 
 int papan[BOARD_HEIGHT][BOARD_WIDTH];
 
@@ -272,7 +273,6 @@ void on_render() {
 
     /* Draw board */
     renderTexture(boardTexture, Game.renderer, 0, 0);
-    /* Draw unit */
     board_draw(papan);
 
     if (Game.flags.isPaused) {
@@ -301,10 +301,10 @@ void board_draw(int board[BOARD_HEIGHT][BOARD_WIDTH]) {
     for (int i = 0; i < BOARD_HEIGHT; ++i) {
         for (int j = 0; j < BOARD_WIDTH; ++j) {
             if (board[i][j] == 0) {
-                renderTexture2(boardUnit[0], Game.renderer, i * TILE_SIZE, j * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+                renderTexture2(boardUnit[0], Game.renderer, (i * TILE_SIZE) + (SPACING * (i+1)), (j * TILE_SIZE) + (SPACING * (j+1)), TILE_SIZE, TILE_SIZE);
             }
             else if (board[i][j] == 1) {
-                renderTexture2(boardUnit[1], Game.renderer, i * TILE_SIZE, j * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+                renderTexture2(boardUnit[1], Game.renderer, (i * TILE_SIZE) + (SPACING * (i+1)), (j * TILE_SIZE) + (SPACING * (j+1)), TILE_SIZE, TILE_SIZE);
             }
         }
     }
@@ -312,7 +312,7 @@ void board_draw(int board[BOARD_HEIGHT][BOARD_WIDTH]) {
 
 int mouse_is_onboard(int mouseX, int mouseY) {
     /* dummy checking */
-    if ((mouseX >= 0) && (mouseX <= 120) && (mouseY >= 0) && (mouseY <= 120))
+    if ((mouseX >= 0) && (mouseX <= (TILE_SIZE * 5)) && (mouseY >= 0) && (mouseY <= (TILE_SIZE * 5)))
         return 1;
 
     return 0;
