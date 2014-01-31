@@ -8,8 +8,7 @@ Aplikasi ini berisi tentang permainan tic tac toe yang berukuran 5x5
 dan menggunakan metode algoritma minimax
 
 
-Kelompok
-========
+## Kelompok
 Andriana Hadisurya	: 10112764
 
 Mohamad Saeful Ihsan	: 10112645
