@@ -19,14 +19,16 @@ int finalize();
 #define BOARD_WIDTH     5
 #define BOARD_HEIGHT    5
 
-#define TILE_WIDTH      24
-#define TILE_HEIGHT     24
+#define TILE_SIZE      24
 
 int papan[BOARD_HEIGHT][BOARD_WIDTH];
 
-SDL_Texture* boardTexture[2];
+SDL_Texture* boardTexture;
+SDL_Texture* boardUnit[2];
 
 void board_draw(int board[BOARD_HEIGHT][BOARD_WIDTH]);
+int  mouse_is_onboard(int mouseX, int mouseY);
+void place_unit(int mouseX, int mouseY, int board[BOARD_HEIGHT][BOARD_WIDTH], int type);
 
 int menang(const int papan[25]) {
     unsigned menang[24][5] = {{0,1,2,3,4},{5,6,7,8,9},{10,11,12,13,14},{15,16,17,18,19},{20,21,22,23,24},
@@ -212,8 +214,9 @@ int init() {
 int load_resources() {
     printf("Loading resources...\n");
 
-    boardTexture[0] = loadTexture("..\\assets\\x.png", Game.renderer);
-    boardTexture[1] = loadTexture("..\\assets\\o.png", Game.renderer);
+    boardTexture = loadTexture("..\\assets\\board.png", Game.renderer);
+    boardUnit[0] = loadTexture("..\\assets\\x.png", Game.renderer);
+    boardUnit[1] = loadTexture("..\\assets\\o.png", Game.renderer);
 
     printf("Done.\n\n");
     return 0;
@@ -237,7 +240,11 @@ void on_event() {
 
             /* Mouse events */
             if (Game.event.type == SDL_MOUSEBUTTONDOWN) {
-                //Game.flags.isRunning = 0;
+                if (Game.event.button.button == SDL_BUTTON_LEFT) {
+                    if (mouse_is_onboard(Game.event.button.x, Game.event.button.y)) {
+                        place_unit(Game.event.button.x, Game.event.button.y, papan, 1);
+                    }
+                }
             }
         }
 
@@ -259,13 +266,19 @@ void on_update() {
 void on_render() {
     SDL_RenderClear(Game.renderer);
 
+    /* Set white backround color */
     SDL_SetRenderDrawColor(Game.renderer, 255, 255, 255, 255);
     SDL_RenderFillRect(Game.renderer, NULL);
 
+    /* Draw board */
+    renderTexture(boardTexture, Game.renderer, 0, 0);
+    /* Draw unit */
     board_draw(papan);
+
     if (Game.flags.isPaused) {
         /* show isPaused screen */
     }
+
     SDL_RenderPresent(Game.renderer);
 }
 
@@ -288,11 +301,26 @@ void board_draw(int board[BOARD_HEIGHT][BOARD_WIDTH]) {
     for (int i = 0; i < BOARD_HEIGHT; ++i) {
         for (int j = 0; j < BOARD_WIDTH; ++j) {
             if (board[i][j] == 0) {
-                renderTexture2(boardTexture[0], Game.renderer, i * TILE_HEIGHT, j * TILE_WIDTH, TILE_WIDTH, TILE_HEIGHT);
+                renderTexture2(boardUnit[0], Game.renderer, i * TILE_SIZE, j * TILE_SIZE, TILE_SIZE, TILE_SIZE);
             }
             else if (board[i][j] == 1) {
-                renderTexture2(boardTexture[1], Game.renderer, i * TILE_HEIGHT, j * TILE_WIDTH, TILE_WIDTH, TILE_HEIGHT);
+                renderTexture2(boardUnit[1], Game.renderer, i * TILE_SIZE, j * TILE_SIZE, TILE_SIZE, TILE_SIZE);
             }
         }
     }
+}
+
+int mouse_is_onboard(int mouseX, int mouseY) {
+    /* dummy checking */
+    if ((mouseX >= 0) && (mouseX <= 120) && (mouseY >= 0) && (mouseY <= 120))
+        return 1;
+
+    return 0;
+}
+
+void place_unit(int mouseX, int mouseY, int board[BOARD_HEIGHT][BOARD_WIDTH], int type) {
+    int x = mouseX / TILE_SIZE;
+    int y = mouseY / TILE_SIZE;
+
+    board[x][y] = type;
 }
