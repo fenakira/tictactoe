@@ -33,7 +33,7 @@ typedef struct {
 } Board;
 
 Board papan;
-SDL_Texture* boardUnit[2];
+SDL_Texture *boardUnit[2];
 
 void board_draw(Board board);
 int  mouse_is_onboard(Board board, int mouseX, int mouseY);
@@ -43,6 +43,7 @@ int is_win(Board board);
 
 int turn;
 int unitType;
+int hasWinner;
 
 int menang(const int papan[25]) {
     unsigned menang[24][5] = {{0,1,2,3,4},{5,6,7,8,9},{10,11,12,13,14},{15,16,17,18,19},{20,21,22,23,24},
@@ -228,8 +229,9 @@ int init() {
     papan.y = 30;
 
     /* initialize game statistics */
-    turn = 1;
-    unitType = UNIT_TYPE_X;
+    turn      = 1;
+    unitType  = UNIT_TYPE_X;
+    hasWinner = 0;
 
     printf("Done.\n\n");
     return 0;
@@ -265,10 +267,14 @@ void on_event() {
             /* Mouse events */
             if (Game.event.type == SDL_MOUSEBUTTONDOWN) {
                 if (Game.event.button.button == SDL_BUTTON_LEFT) {
-                    if (mouse_is_onboard(papan, Game.event.button.x, Game.event.button.y)) {
-                        if (is_validmove(papan, Game.event.button.x, Game.event.button.y)) {
-                            place_unit(Game.event.button.x, Game.event.button.y, &papan, unitType);
-                            turn++;
+                    if (!hasWinner) {
+                        if (mouse_is_onboard(papan, Game.event.button.x, Game.event.button.y)) {
+                            if (is_validmove(papan, Game.event.button.x, Game.event.button.y)) {
+                                place_unit(Game.event.button.x, Game.event.button.y, &papan, unitType);
+                                hasWinner = is_win(papan);
+                                turn++;
+                                unitType = !unitType;
+                            }
                         }
                     }
                 }
@@ -283,15 +289,17 @@ void on_event() {
 
 void on_update() {
     if (!Game.flags.isPaused) {
-        int maxTurn = BOARD_WIDTH * BOARD_HEIGHT;
+        /* Move AI */
+        // int maxTurn = BOARD_WIDTH * BOARD_HEIGHT;
 
-        if ((turn != maxTurn) && !is_win(papan)) {
-            if ((turn % 2) == 0) {
-                unitType = !unitType;
-                // gerak_komputer(&papan);
-                turn++;
-            }
-        }
+        // if ((turn != maxTurn) && !is_win(papan)) {
+        //     if ((turn % 2) == 0) {
+        //         unitType = !unitType;
+        //         gerak_komputer(&papan);
+        //         hasWinner = is_win(papan);
+        //         turn++;
+        //     }
+        // }
     }
     else {
         /* show isPaused control update */
@@ -308,6 +316,27 @@ void on_render() {
     /* Draw board */
     board_draw(papan);
 
+    /* Check for winning */
+    int maxTurn = BOARD_WIDTH * BOARD_HEIGHT;
+    SDL_Texture* winMessage = NULL;
+    SDL_Color fontColor = {0, 115, 255};
+
+    if (hasWinner == 1) {
+        winMessage = renderText(Game.renderer, "X Win!", "..\\assets\\sf_atarian_system.ttf", fontColor, 72);
+    }
+    else if(hasWinner == 2) {
+        winMessage = renderText(Game.renderer, "O Win!", "..\\assets\\sf_atarian_system.ttf", fontColor, 72);
+    }
+    else if(turn == maxTurn) {
+        winMessage = renderText(Game.renderer, "Draw!", "..\\assets\\sf_atarian_system.ttf", fontColor, 72);
+    }
+
+    // /* Draw Win Message */
+    if (winMessage != NULL) {
+        renderTexture(winMessage, Game.renderer, 215, 200);
+        SDL_DestroyTexture(winMessage);
+    }
+
     if (Game.flags.isPaused) {
         /* show isPaused screen */
     }
@@ -316,6 +345,11 @@ void on_render() {
 }
 
 int cleanup() {
+    /* Unload game textures from memory */
+    SDL_DestroyTexture(papan.texture);
+    SDL_DestroyTexture(boardUnit[0]);
+    SDL_DestroyTexture(boardUnit[1]);
+
     SDL_DestroyRenderer(Game.renderer);
     SDL_DestroyWindow(Game.window);
 
@@ -364,6 +398,63 @@ void place_unit(int mouseX, int mouseY, Board *board, int type) {
 }
 
 int is_win(Board board) {
+    int win = 0;
+    int type = UNIT_TYPE_NONE;
+
+    /* horizontal checking */
+    for(int i = 0; i < BOARD_WIDTH; ++i) {
+        if(board.tiles[i][0] == board.tiles[i][1] &&
+           board.tiles[i][0] == board.tiles[i][2] &&
+           board.tiles[i][0] == board.tiles[i][3] &&
+           board.tiles[i][0] == board.tiles[i][4] &&
+           board.tiles[i][0] != -1) {
+            win = 1;
+            type = board.tiles[i][0];
+        }
+    }
+
+    /* vertical checking */
+    if (!win) {
+        for(int i = 0; i < BOARD_HEIGHT; ++i) {
+            if(board.tiles[0][i] == board.tiles[1][i] &&
+               board.tiles[0][i] == board.tiles[2][i] &&
+               board.tiles[0][i] == board.tiles[3][i] &&
+               board.tiles[0][i] == board.tiles[4][i] &&
+               board.tiles[0][i] != -1) {
+                win = 1;
+                type = board.tiles[0][i];
+            }
+        }
+    }
+
+
+    /* diagonal checking */
+    if (!win) {
+        if(board.tiles[0][0] == board.tiles[1][1] &&
+            board.tiles[0][0] == board.tiles[2][2] &&
+            board.tiles[0][0] == board.tiles[3][3] &&
+            board.tiles[0][0] == board.tiles[4][4] &&
+            board.tiles[0][0] != -1) {
+            win = 1;
+            type = board.tiles[0][0];
+
+        }
+        else if(board.tiles[0][4] == board.tiles[1][3] &&
+            board.tiles[0][4] == board.tiles[2][2] &&
+            board.tiles[0][4] == board.tiles[3][1] &&
+            board.tiles[0][4] == board.tiles[4][0] &&
+            board.tiles[0][4] != -1) {
+            win = 1;
+            type = board.tiles[0][4];
+        }
+    }
+
+    if (win) {
+        if(type == UNIT_TYPE_X)
+            return 1; //X Win
+        else if(type == UNIT_TYPE_O)
+            return 2; //O Win    
+    }
 
     return 0;
 }
