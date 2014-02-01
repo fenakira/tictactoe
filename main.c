@@ -292,7 +292,7 @@ void on_update() {
         /* Move AI */
         // int maxTurn = BOARD_WIDTH * BOARD_HEIGHT;
 
-        // if ((turn != maxTurn) && !is_win(papan)) {
+        // if ((turn <= maxTurn) && !is_win(papan)) {
         //     if ((turn % 2) == 0) {
         //         unitType = !unitType;
         //         gerak_komputer(&papan);
@@ -327,7 +327,7 @@ void on_render() {
     else if(hasWinner == 2) {
         winMessage = renderText(Game.renderer, "O Win!", "..\\assets\\sf_atarian_system.ttf", fontColor, 72);
     }
-    else if(turn == maxTurn) {
+    else if(turn > maxTurn) {
         winMessage = renderText(Game.renderer, "Draw!", "..\\assets\\sf_atarian_system.ttf", fontColor, 72);
     }
 
