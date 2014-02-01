@@ -22,14 +22,18 @@ int finalize();
 #define TILE_SIZE      64
 #define SPACING         2
 
-int papan[BOARD_HEIGHT][BOARD_WIDTH];
+typedef struct {
+    int x, y;
+    int tiles[BOARD_HEIGHT][BOARD_WIDTH];
+    SDL_Texture* texture;
+} Board;
 
-SDL_Texture* boardTexture;
+Board papan;
 SDL_Texture* boardUnit[2];
 
-void board_draw(int board[BOARD_HEIGHT][BOARD_WIDTH]);
-int  mouse_is_onboard(int mouseX, int mouseY);
-void place_unit(int mouseX, int mouseY, int board[BOARD_HEIGHT][BOARD_WIDTH], int type);
+void board_draw(Board board);
+int  mouse_is_onboard(Board board, int mouseX, int mouseY);
+void place_unit(int mouseX, int mouseY, Board *board, int type);
 
 int menang(const int papan[25]) {
     unsigned menang[24][5] = {{0,1,2,3,4},{5,6,7,8,9},{10,11,12,13,14},{15,16,17,18,19},{20,21,22,23,24},
@@ -201,11 +205,14 @@ int init() {
     printf("Initializing game props.\n");
     for (int i = 0; i < 5; ++i) 
         for (int j = 0; j < 5; ++j) 
-            papan[i][j] = 0;
+            papan.tiles[i][j] = -1;
+
+    papan.x = 30;
+    papan.y = 30;
 
     /* testing board --REMOVE ME-- */
-    papan[3][2] = 1;
-    papan[3][3] = 1;
+    papan.tiles[3][2] = 1;
+    papan.tiles[3][3] = 1;
     /* end */
 
     printf("Done.\n\n");
@@ -215,9 +222,9 @@ int init() {
 int load_resources() {
     printf("Loading resources...\n");
 
-    boardTexture = loadTexture("..\\assets\\board.png", Game.renderer);
-    boardUnit[0] = loadTexture("..\\assets\\x.png", Game.renderer);
-    boardUnit[1] = loadTexture("..\\assets\\o.png", Game.renderer);
+    papan.texture = loadTexture("..\\assets\\board.png", Game.renderer);
+    boardUnit[0]  = loadTexture("..\\assets\\x.png", Game.renderer);
+    boardUnit[1]  = loadTexture("..\\assets\\o.png", Game.renderer);
 
     printf("Done.\n\n");
     return 0;
@@ -242,8 +249,8 @@ void on_event() {
             /* Mouse events */
             if (Game.event.type == SDL_MOUSEBUTTONDOWN) {
                 if (Game.event.button.button == SDL_BUTTON_LEFT) {
-                    if (mouse_is_onboard(Game.event.button.x, Game.event.button.y)) {
-                        place_unit(Game.event.button.x, Game.event.button.y, papan, 1);
+                    if (mouse_is_onboard(papan, Game.event.button.x, Game.event.button.y)) {
+                        place_unit(Game.event.button.x, Game.event.button.y, &papan, 1);
                     }
                 }
             }
@@ -272,7 +279,6 @@ void on_render() {
     SDL_RenderFillRect(Game.renderer, NULL);
 
     /* Draw board */
-    renderTexture(boardTexture, Game.renderer, 0, 0);
     board_draw(papan);
 
     if (Game.flags.isPaused) {
@@ -297,30 +303,35 @@ int finalize() {
     return 0;
 }
 
-void board_draw(int board[BOARD_HEIGHT][BOARD_WIDTH]) {
+void board_draw(Board board) {
+    renderTexture(board.texture, Game.renderer, board.x, board.y);
+
+    /* draw units */
     for (int i = 0; i < BOARD_HEIGHT; ++i) {
         for (int j = 0; j < BOARD_WIDTH; ++j) {
-            if (board[i][j] == 0) {
-                renderTexture2(boardUnit[0], Game.renderer, (i * TILE_SIZE) + (SPACING * (i+1)), (j * TILE_SIZE) + (SPACING * (j+1)), TILE_SIZE, TILE_SIZE);
+            if (board.tiles[i][j] == 0) {
+                renderTexture2(boardUnit[0], Game.renderer, board.x + (i * TILE_SIZE) + (SPACING * (i+1)), board.y + (j * TILE_SIZE) + (SPACING * (j+1)), TILE_SIZE, TILE_SIZE);
             }
-            else if (board[i][j] == 1) {
-                renderTexture2(boardUnit[1], Game.renderer, (i * TILE_SIZE) + (SPACING * (i+1)), (j * TILE_SIZE) + (SPACING * (j+1)), TILE_SIZE, TILE_SIZE);
+            else if (board.tiles[i][j] == 1) {
+                renderTexture2(boardUnit[1], Game.renderer, board.x + (i * TILE_SIZE) + (SPACING * (i+1)), board.y + (j * TILE_SIZE) + (SPACING * (j+1)), TILE_SIZE, TILE_SIZE);
             }
         }
     }
 }
 
-int mouse_is_onboard(int mouseX, int mouseY) {
-    /* dummy checking */
-    if ((mouseX >= 0) && (mouseX <= (TILE_SIZE * 5)) && (mouseY >= 0) && (mouseY <= (TILE_SIZE * 5)))
+int mouse_is_onboard(Board board, int mouseX, int mouseY) {
+    if ((mouseX >= board.x) && 
+        (mouseX <= (TILE_SIZE * 5) + (SPACING * 5) + board.x) && 
+        (mouseY >= board.y) && 
+        (mouseY <= (TILE_SIZE * 5) + (SPACING * 5) + board.y))
         return 1;
 
     return 0;
 }
 
-void place_unit(int mouseX, int mouseY, int board[BOARD_HEIGHT][BOARD_WIDTH], int type) {
-    int x = mouseX / TILE_SIZE;
-    int y = mouseY / TILE_SIZE;
+void place_unit(int mouseX, int mouseY, Board *board, int type) {
+    int x = (mouseX - board->x - SPACING)  / (TILE_SIZE + SPACING);
+    int y = (mouseY - board->y - SPACING)  / (TILE_SIZE + SPACING);
 
-    board[x][y] = type;
+    board->tiles[x][y] = type;
 }
