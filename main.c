@@ -34,6 +34,11 @@ SDL_Texture* boardUnit[2];
 void board_draw(Board board);
 int  mouse_is_onboard(Board board, int mouseX, int mouseY);
 void place_unit(int mouseX, int mouseY, Board *board, int type);
+int is_validmove(Board board, int mouseX, int mouseY);
+int is_win(Board board);
+
+int turn;
+int unitType;
 
 int menang(const int papan[25]) {
     unsigned menang[24][5] = {{0,1,2,3,4},{5,6,7,8,9},{10,11,12,13,14},{15,16,17,18,19},{20,21,22,23,24},
@@ -52,45 +57,53 @@ int menang(const int papan[25]) {
     return 0;
 }
 
-int minimax(int papan[25], int player) {
-    int pemenang = menang(papan);
+int minimax(Board *board, int player) {
+    int pemenang = is_win(*board);
     if(pemenang != 0) return pemenang*player;
 
-    int pindah = -1;
-    int skor = -2;
-    int i;
-    for(i = 0; i < 9; i++) {
-        if(papan[i] == 0) {
-            papan[i] = player;
-            int thisSkor = -minimax(papan, player*-1);
-            if(thisSkor > skor) {
-                skor = thisSkor;
-                pindah = i;
+    int pindahX = -1;
+    int pindahY = -1;
+    int skor    = -2;
+    for(int i = 0; i < BOARD_HEIGHT; i++) {
+        for (int j = 0; j < BOARD_WIDTH; ++j) {
+            if(board->tiles[i][j] == -1) {
+                board->tiles[i][j] = player;
+                int thisSkor = -minimax(board, player*-1);
+                if(thisSkor > skor) {
+                    skor = thisSkor;
+                    pindahX = j;
+                    pindahY = i;
+                }
+                board->tiles[i][j] = -1;
             }
-            papan[i] = 0;
         }
     }
-    if(pindah == -1) return 0;
+
+    if((pindahX == -1) && (pindahY == -1)) return 0;
     return skor;
 }
 
-void gerak_komputer(int papan[25]) {
-    int pindah = -1;
+void gerak_komputer(Board *board) {
+    int pindahX = -1;
+    int pindahY = -1;
+
     int skor = -2;
-    int i;
-    for(i = 0; i < 25; ++i) {
-        if(papan[i] == 0) {
-            papan[i] = 1;
-            int tempSkor = -minimax(papan, -1);
-            papan[i] = 0;
-            if(tempSkor > skor) {
-                skor = tempSkor;
-                pindah = i;
+    for(int i = 0; i < BOARD_HEIGHT; ++i) {
+        for (int j = 0; j < BOARD_WIDTH; ++j) {
+            if(board->tiles[i][j] == -1) {
+                board->tiles[i][j] = unitType;
+                int tempSkor = -minimax(board, unitType);
+                board->tiles[i][j] = -1;
+                if(tempSkor > skor) {
+                    skor = tempSkor;
+                    pindahX = j;
+                    pindahY = i;
+                }
             }
         }
     }
 
-    papan[pindah] = 1;
+    board->tiles[pindahY][pindahX] = unitType;
 }
 
 void gerak_player(int papan[25]) {
@@ -210,6 +223,10 @@ int init() {
     papan.x = 30;
     papan.y = 30;
 
+    /* initialize game statistics */
+    turn = 1;
+    unitType = 0;
+
     /* testing board --REMOVE ME-- */
     papan.tiles[3][2] = 1;
     papan.tiles[3][3] = 1;
@@ -250,7 +267,10 @@ void on_event() {
             if (Game.event.type == SDL_MOUSEBUTTONDOWN) {
                 if (Game.event.button.button == SDL_BUTTON_LEFT) {
                     if (mouse_is_onboard(papan, Game.event.button.x, Game.event.button.y)) {
-                        place_unit(Game.event.button.x, Game.event.button.y, &papan, 1);
+                        if (is_validmove(papan, Game.event.button.x, Game.event.button.y)) {
+                            place_unit(Game.event.button.x, Game.event.button.y, &papan, unitType);
+                            turn++;
+                        }
                     }
                 }
             }
@@ -264,7 +284,15 @@ void on_event() {
 
 void on_update() {
     if (!Game.flags.isPaused) {
+        int maxTurn = BOARD_WIDTH * BOARD_HEIGHT;
 
+        if ((turn != maxTurn) && !is_win(papan)) {
+            if ((turn % 2) == 0) {
+                unitType = !unitType;
+                // gerak_komputer(&papan);
+                turn++;
+            }
+        }
     }
     else {
         /* show isPaused control update */
@@ -310,10 +338,10 @@ void board_draw(Board board) {
     for (int i = 0; i < BOARD_HEIGHT; ++i) {
         for (int j = 0; j < BOARD_WIDTH; ++j) {
             if (board.tiles[i][j] == 0) {
-                renderTexture2(boardUnit[0], Game.renderer, board.x + (i * TILE_SIZE) + (SPACING * (i+1)), board.y + (j * TILE_SIZE) + (SPACING * (j+1)), TILE_SIZE, TILE_SIZE);
+                renderTexture2(boardUnit[0], Game.renderer, board.x + (j * TILE_SIZE) + (SPACING * (j+1)), board.y + (i * TILE_SIZE) + (SPACING * (i+1)), TILE_SIZE, TILE_SIZE);
             }
             else if (board.tiles[i][j] == 1) {
-                renderTexture2(boardUnit[1], Game.renderer, board.x + (i * TILE_SIZE) + (SPACING * (i+1)), board.y + (j * TILE_SIZE) + (SPACING * (j+1)), TILE_SIZE, TILE_SIZE);
+                renderTexture2(boardUnit[1], Game.renderer, board.x + (j * TILE_SIZE) + (SPACING * (j+1)), board.y + (i * TILE_SIZE) + (SPACING * (i+1)), TILE_SIZE, TILE_SIZE);
             }
         }
     }
@@ -333,5 +361,21 @@ void place_unit(int mouseX, int mouseY, Board *board, int type) {
     int x = (mouseX - board->x - SPACING)  / (TILE_SIZE + SPACING);
     int y = (mouseY - board->y - SPACING)  / (TILE_SIZE + SPACING);
 
-    board->tiles[x][y] = type;
+    board->tiles[y][x] = type;
+}
+
+int is_win(Board board) {
+
+    return 0;
+}
+
+int is_validmove(Board board, int mouseX, int mouseY) {
+    int x = (mouseX - board.x - SPACING)  / (TILE_SIZE + SPACING);
+    int y = (mouseY - board.y - SPACING)  / (TILE_SIZE + SPACING);
+
+    if (board.tiles[y][x] == -1) {
+        return 1;
+    }
+
+    return 0;
 }
