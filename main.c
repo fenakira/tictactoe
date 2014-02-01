@@ -22,6 +22,10 @@ int finalize();
 #define TILE_SIZE      64
 #define SPACING         2
 
+#define UNIT_TYPE_NONE  -1
+#define UNIT_TYPE_X     0
+#define UNIT_TYPE_O     1
+
 typedef struct {
     int x, y;
     int tiles[BOARD_HEIGHT][BOARD_WIDTH];
@@ -225,12 +229,7 @@ int init() {
 
     /* initialize game statistics */
     turn = 1;
-    unitType = 0;
-
-    /* testing board --REMOVE ME-- */
-    papan.tiles[3][2] = 1;
-    papan.tiles[3][3] = 1;
-    /* end */
+    unitType = UNIT_TYPE_X;
 
     printf("Done.\n\n");
     return 0;
@@ -337,10 +336,10 @@ void board_draw(Board board) {
     /* draw units */
     for (int i = 0; i < BOARD_HEIGHT; ++i) {
         for (int j = 0; j < BOARD_WIDTH; ++j) {
-            if (board.tiles[i][j] == 0) {
+            if (board.tiles[i][j] == UNIT_TYPE_X) {
                 renderTexture2(boardUnit[0], Game.renderer, board.x + (j * TILE_SIZE) + (SPACING * (j+1)), board.y + (i * TILE_SIZE) + (SPACING * (i+1)), TILE_SIZE, TILE_SIZE);
             }
-            else if (board.tiles[i][j] == 1) {
+            else if (board.tiles[i][j] == UNIT_TYPE_O) {
                 renderTexture2(boardUnit[1], Game.renderer, board.x + (j * TILE_SIZE) + (SPACING * (j+1)), board.y + (i * TILE_SIZE) + (SPACING * (i+1)), TILE_SIZE, TILE_SIZE);
             }
         }
@@ -373,7 +372,7 @@ int is_validmove(Board board, int mouseX, int mouseY) {
     int x = (mouseX - board.x - SPACING)  / (TILE_SIZE + SPACING);
     int y = (mouseY - board.y - SPACING)  / (TILE_SIZE + SPACING);
 
-    if (board.tiles[y][x] == -1) {
+    if (board.tiles[y][x] == UNIT_TYPE_NONE) {
         return 1;
     }
 
