@@ -52,6 +52,7 @@ int is_win(Board board);
 int turn;
 int unitType;
 int hasWinner;
+int perm; /* ONLY FOR DEBUGGING */
 
 void get_availablemoves(Board board, Point moves[BOARD_HEIGHT*BOARD_WIDTH], int *count) {
     for (int i = 0; i < BOARD_HEIGHT; ++i) {
@@ -75,7 +76,8 @@ int score(Board board, int depth) {
 }
 
 int minimax(Board board, int depth, int player) {
-    if (is_win(board) || (depth == 1))
+    perm++; /* ONLY FOR DEBUGGING */
+    if (is_win(board) || (depth == 3))
         return score(board, depth);
     
     depth++;
@@ -111,7 +113,7 @@ int minimax(Board board, int depth, int player) {
         //reset after test
         board.tiles[moves[i].y][moves[i].x] = -1;
 
-        //compare with previous move and get the worst
+        //compare with previous move and get the worst for the opponent
         if (score > bestScore) {
             //store move and score
             bestScore = score;
@@ -141,7 +143,7 @@ void computer_move(Board *board) {
     get_availablemoves(*board, moves, &movesCount);
 
     Point bestMove = { -1, -1 };
-    int bestScore = -26;
+    int bestScore = 26;
 
     //loop each available moves
     for(int i = 0; i < movesCount; ++i) {
@@ -154,12 +156,13 @@ void computer_move(Board *board) {
 
         //get score
         int score = minimax(tmpBoard, 0, 0);
+        printf("Score: %d\n", score); /* ONLY FOR DEBUGGING */
 
         //reset after test
         board->tiles[moves[i].y][moves[i].x] = -1;
 
         //compare with previous move and get the worst
-        if (score > bestScore) {
+        if (score < bestScore) {
             //store move and score
             bestScore = score;
             bestMove.x = moves[i].x;
@@ -298,10 +301,12 @@ void on_update() {
 
         if ((turn <= maxTurn) && !is_win(papan)) {
             if ((turn % 2) == 0) {
+                perm = 0; /* ONLY FOR DEBUGGING */
                 unitType = !unitType;
                 computer_move(&papan);
                 hasWinner = is_win(papan);
                 turn++;
+                printf("Permutation: %d\n\n", perm);  /* ONLY FOR DEBUGGING */
             }
         }
     }
