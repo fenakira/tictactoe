@@ -35,6 +35,7 @@ typedef struct {
 Board papan;
 SDL_Texture *boardUnit[2];
 
+void init_board(Board *board);
 void board_draw(Board board);
 int  mouse_is_onboard(Board board, int mouseX, int mouseY);
 void place_unit(int mouseX, int mouseY, Board *board, int type);
@@ -221,9 +222,7 @@ int init() {
 
     /* initialize game board */
     printf("Initializing game props.\n");
-    for (int i = 0; i < 5; ++i) 
-        for (int j = 0; j < 5; ++j) 
-            papan.tiles[i][j] = -1;
+    init_board(&papan);
 
     papan.x = 30;
     papan.y = 30;
@@ -362,6 +361,13 @@ int finalize() {
     SDL_Quit();
 
     return 0;
+}
+
+void init_board(Board *board) {
+    for (int i = 0; i < BOARD_HEIGHT; ++i) 
+        for (int j = 0; j < BOARD_WIDTH; ++j) 
+            board->tiles[i][j] = -1;
+
 }
 
 void board_draw(Board board) {
