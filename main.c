@@ -32,10 +32,17 @@ typedef struct {
     SDL_Texture* texture;
 } Board;
 
+
+typedef struct {
+    int x;
+    int y;
+} Point;
+
 Board papan;
 SDL_Texture *boardUnit[2];
 
 void init_board(Board *board);
+void copy_board(Board *target, Board source);
 void board_draw(Board board);
 int  mouse_is_onboard(Board board, int mouseX, int mouseY);
 void place_unit(int mouseX, int mouseY, Board *board, int type);
@@ -46,127 +53,125 @@ int turn;
 int unitType;
 int hasWinner;
 
-int menang(const int papan[25]) {
-    unsigned menang[24][5] = {{0,1,2,3,4},{5,6,7,8,9},{10,11,12,13,14},{15,16,17,18,19},{20,21,22,23,24},
-							{0,5,10,15,20},{1,6,11,16,21},{2,7,12,17,22,},{3,8,13,18,23},{4,9,14,19,24},
-							{0,6,12,18,24},{4,8,12,16,20}};
-	
-	int i;
-    for(i = 0; i < 8; ++i) {
-        if(papan[menang[i][0]] != 0 &&
-           papan[menang[i][0]] == papan[menang[i][1]] &&
-           papan[menang[i][0]] == papan[menang[i][2]] &&
-           papan[menang[i][0]] == papan[menang[i][3]] &&
-           papan[menang[i][0]] == papan[menang[i][4]])
-            return papan[menang[i][4]];
+void get_availablemoves(Board board, Point moves[BOARD_HEIGHT*BOARD_WIDTH], int *count) {
+    for (int i = 0; i < BOARD_HEIGHT; ++i) {
+        for (int j = 0; j < BOARD_WIDTH; ++j) {
+            if (board.tiles[i][j] == -1) {
+                moves[(*count)].x = j;
+                moves[(*count)].y = i;
+                (*count)++;
+            }        
+        }
     }
+}
+
+int score(Board board, int depth) {
+    if(is_win(board) == 1) 
+        return 26 - depth;
+    else if(is_win(board) == 2) 
+        return depth - 26;
+
     return 0;
 }
 
-int minimax(Board *board, int player) {
-    int pemenang = is_win(*board);
-    if(pemenang != 0) return pemenang*player;
+int minimax(Board board, int depth, int player) {
+    if (is_win(board) || (depth == 0))
+        return score(board, depth);
+    
+    depth++;
 
-    int pindahX = -1;
-    int pindahY = -1;
-    int skor    = -2;
-    for(int i = 0; i < BOARD_HEIGHT; i++) {
-        for (int j = 0; j < BOARD_WIDTH; ++j) {
-            if(board->tiles[i][j] == -1) {
-                board->tiles[i][j] = player;
-                int thisSkor = -minimax(board, player*-1);
-                if(thisSkor > skor) {
-                    skor = thisSkor;
-                    pindahX = j;
-                    pindahY = i;
-                }
-                board->tiles[i][j] = -1;
-            }
+    int tileCount = BOARD_HEIGHT*BOARD_WIDTH;
+    Point moves[tileCount];
+    
+    for (int i = 0; i < tileCount; ++i) {
+        moves[i].x = 0;
+        moves[i].y = 0;
+    }
+
+    int movesCount = 0;
+
+    //get available moves
+    get_availablemoves(board, moves, &movesCount);
+
+    Point bestMove = { -1, -1 };
+    int bestScore = -26;
+
+    //loop each available moves
+    for(int i = 0; i < movesCount; ++i) {
+        //test current tile
+        board.tiles[moves[i].y][moves[i].x] = 1;
+
+        //prepare temporary board for testing
+        Board tmpBoard;
+        copy_board(&tmpBoard, board);
+
+        //get score
+        int score = minimax(tmpBoard, 0, !player);
+
+        //reset after test
+        board.tiles[moves[i].y][moves[i].x] = -1;
+
+        //compare with previous move and get the worst
+        if (score > bestScore) {
+            //store move and score
+            bestScore = score;
+            bestMove.x = moves[i].x;
+            bestMove.y = moves[i].y;
         }
     }
 
-    if((pindahX == -1) && (pindahY == -1)) return 0;
-    return skor;
+   if ((bestMove.x == -1) && (bestMove.y == -1))
+        return 0;
+
+    return bestScore;
 }
 
-void gerak_komputer(Board *board) {
-    int pindahX = -1;
-    int pindahY = -1;
+void computer_move(Board *board) {
+    int tileCount = BOARD_HEIGHT*BOARD_WIDTH;
+    Point moves[tileCount];
+    
+    for (int i = 0; i < tileCount; ++i) {
+        moves[i].x = 0;
+        moves[i].y = 0;
+    }
 
-    int skor = -2;
-    for(int i = 0; i < BOARD_HEIGHT; ++i) {
-        for (int j = 0; j < BOARD_WIDTH; ++j) {
-            if(board->tiles[i][j] == -1) {
-                board->tiles[i][j] = unitType;
-                int tempSkor = -minimax(board, unitType);
-                board->tiles[i][j] = -1;
-                if(tempSkor > skor) {
-                    skor = tempSkor;
-                    pindahX = j;
-                    pindahY = i;
-                }
-            }
+    int movesCount = 0;
+
+    //get available moves
+    get_availablemoves(*board, moves, &movesCount);
+
+    Point bestMove = { -1, -1 };
+    int bestScore = -26;
+
+    //loop each available moves
+    for(int i = 0; i < movesCount; ++i) {
+        //test current tile
+        board->tiles[moves[i].y][moves[i].x] = 1;
+
+        //prepare temporary board for testing
+        Board tmpBoard;
+        copy_board(&tmpBoard, *board);
+
+        //get score
+        int score = minimax(tmpBoard, 0, 0);
+
+        //reset after test
+        board->tiles[moves[i].y][moves[i].x] = -1;
+
+        //compare with previous move and get the worst
+        if (score > bestScore) {
+            //store move and score
+            bestScore = score;
+            bestMove.x = moves[i].x;
+            bestMove.y = moves[i].y;
         }
     }
 
-    board->tiles[pindahY][pindahX] = unitType;
-}
-
-void gerak_player(int papan[25]) {
-    int pindah = 0;
-    do {
-        printf("Pindah ke kotak [0..24]: ");
-        scanf("%d", &pindah);
-        printf("\n");
-    } while (pindah >= 25 || pindah < 0 && papan[pindah] == 0);
-    papan[pindah] = -1;
+    //move at the best tile
+    board->tiles[bestMove.y][bestMove.x] = 1;
 }
 
 int main(int argc, char* argv[]) {
-	// int pilih;
- //    int papan[25] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-    
- //    gotoxy(33,8);printf("TIC TAC TOE\n");
- //    gotoxy(32,9);printf("=====================\n");
-	// gotoxy(33,10);printf("1. Mulai Permainan\n");
- //    gotoxy(33,11);printf("2. Keluar\n");
- //    gotoxy(32,12);printf("------------------\n");
- //    gotoxy(33,13);printf("Pilih : ");scanf("%i",&pilih);
- //    if (pilih == 1)
- //    {
- //    	clrscr();
- //    	//Simbol komputer ditandai dengan O dan Kamu dengan X
-	// 	gotoxy(65,1);printf("Komputer : O");
-	// 	gotoxy(65,2);printf("Kamu     : X");
-	// 	printf("\nBermain ke (1) atau ke (2)? ");
- //    	int player=0;
- //    	scanf("%d",&player);
- //    	printf("\n");
- //    	unsigned turn;
- //    	for(turn = 0; turn < 25 && menang(papan) == 0; ++turn) 
-	// 	{
- //        if((turn+player) % 2 == 0)
- //            gerak_komputer(papan);
- //        else {
- //            cetak(papan);
- //            gerak_player(papan);
- //        	}
- //    	}
- //    switch(menang(papan)) 
-	// 	{
- //        case 0:
- //            textcolor(LIGHTBLUE);printf("\nPERMAINAN SERI\n");textcolor(WHITE);
- //            break;
- //        case 1:
- //            cetak(papan);
- //            textcolor(LIGHTRED);printf("\nKAMU KALAH\n");textcolor(WHITE);
- //            break;
- //        case -1:
- //            textcolor(LIGHTGREEN);printf("\nSELAMAT KAMU MENANG\n");textcolor(WHITE);
- //            break;
- //    	}
-	// }
-    
     /* init phase */ 
     if (init()) {
         fprintf(stderr, "Initialization failed!\n");
@@ -289,16 +294,16 @@ void on_event() {
 void on_update() {
     if (!Game.flags.isPaused) {
         /* Move AI */
-        // int maxTurn = BOARD_WIDTH * BOARD_HEIGHT;
+        int maxTurn = BOARD_WIDTH * BOARD_HEIGHT;
 
-        // if ((turn <= maxTurn) && !is_win(papan)) {
-        //     if ((turn % 2) == 0) {
-        //         unitType = !unitType;
-        //         gerak_komputer(&papan);
-        //         hasWinner = is_win(papan);
-        //         turn++;
-        //     }
-        // }
+        if ((turn <= maxTurn) && !is_win(papan)) {
+            if ((turn % 2) == 0) {
+                unitType = !unitType;
+                computer_move(&papan);
+                hasWinner = is_win(papan);
+                turn++;
+            }
+        }
     }
     else {
         /* show isPaused control update */
@@ -367,6 +372,13 @@ void init_board(Board *board) {
     for (int i = 0; i < BOARD_HEIGHT; ++i) 
         for (int j = 0; j < BOARD_WIDTH; ++j) 
             board->tiles[i][j] = -1;
+
+}
+
+void copy_board(Board *target, Board source) {
+    for (int i = 0; i < BOARD_HEIGHT; ++i)
+        for (int j = 0; j < BOARD_WIDTH; ++j)
+            target->tiles[i][j] = source.tiles[i][j];
 
 }
 
