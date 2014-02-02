@@ -75,7 +75,7 @@ int score(Board board, int depth) {
 }
 
 int minimax(Board board, int depth, int player) {
-    if (is_win(board) || (depth == 0))
+    if (is_win(board) || (depth == 1))
         return score(board, depth);
     
     depth++;
@@ -99,14 +99,14 @@ int minimax(Board board, int depth, int player) {
     //loop each available moves
     for(int i = 0; i < movesCount; ++i) {
         //test current tile
-        board.tiles[moves[i].y][moves[i].x] = 1;
+        board.tiles[moves[i].y][moves[i].x] = player;
 
         //prepare temporary board for testing
         Board tmpBoard;
         copy_board(&tmpBoard, board);
 
         //get score
-        int score = minimax(tmpBoard, 0, !player);
+        int score = minimax(tmpBoard, depth, !player);
 
         //reset after test
         board.tiles[moves[i].y][moves[i].x] = -1;
