@@ -77,7 +77,7 @@ int score(Board board, int depth) {
 
 int minimax(Board board, int depth, int player) {
     perm++; /* ONLY FOR DEBUGGING */
-    if (is_win(board) || (depth == 5))
+    if (is_win(board) || (depth == 3))
         return score(board, depth);
     
     int tileCount = BOARD_HEIGHT*BOARD_WIDTH;
