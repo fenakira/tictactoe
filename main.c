@@ -57,7 +57,7 @@ int perm; /* ONLY FOR DEBUGGING */
 void get_availablemoves(Board board, Point moves[BOARD_HEIGHT*BOARD_WIDTH], int *count) {
     for (int i = 0; i < BOARD_HEIGHT; ++i) {
         for (int j = 0; j < BOARD_WIDTH; ++j) {
-            if (board.tiles[i][j] == -1) {
+            if (board.tiles[i][j] == UNIT_TYPE_NONE) {
                 moves[(*count)].x = j;
                 moves[(*count)].y = i;
                 (*count)++;
@@ -68,20 +68,18 @@ void get_availablemoves(Board board, Point moves[BOARD_HEIGHT*BOARD_WIDTH], int 
 
 int score(Board board, int depth) {
     if(is_win(board) == 1) 
-        return 26 - depth;
+        return 24 - depth;
     else if(is_win(board) == 2) 
-        return depth - 26;
+        return depth - 24;
 
     return 0;
 }
 
 int minimax(Board board, int depth, int player) {
     perm++; /* ONLY FOR DEBUGGING */
-    if (is_win(board) || (depth == 3))
+    if (is_win(board) || (depth == 5))
         return score(board, depth);
     
-    depth++;
-
     int tileCount = BOARD_HEIGHT*BOARD_WIDTH;
     Point moves[tileCount];
     
@@ -96,30 +94,64 @@ int minimax(Board board, int depth, int player) {
     get_availablemoves(board, moves, &movesCount);
 
     Point bestMove = { -1, -1 };
-    int bestScore = -26;
+    int bestScore;
 
-    //loop each available moves
-    for(int i = 0; i < movesCount; ++i) {
-        //test current tile
-        board.tiles[moves[i].y][moves[i].x] = player;
+    //search for max
+    if (player == UNIT_TYPE_X) {
+        //set default best score
+        bestScore = -24;
 
-        //prepare temporary board for testing
-        Board tmpBoard;
-        copy_board(&tmpBoard, board);
+        //loop each available moves
+        for(int i = 0; i < movesCount; ++i) {
+            //test current tile
+            board.tiles[moves[i].y][moves[i].x] = UNIT_TYPE_X;
 
-        //get score
-        int score = minimax(tmpBoard, depth, !player);
+            //prepare temporary board for testing
+            Board tmpBoard;
+            copy_board(&tmpBoard, board);
 
-        //reset after test
-        board.tiles[moves[i].y][moves[i].x] = -1;
+            //get score
+            int score = minimax(tmpBoard, depth+1, UNIT_TYPE_O);
 
-        //compare with previous move and get the worst for the opponent
-        if (score > bestScore) {
-            //store move and score
-            bestScore = score;
-            bestMove.x = moves[i].x;
-            bestMove.y = moves[i].y;
+            //reset after test
+            board.tiles[moves[i].y][moves[i].x] = UNIT_TYPE_NONE;
+
+            //compare with previous move and get the worst for the opponent
+            if (score > bestScore) {
+                //store move and score
+                bestScore = score;
+                bestMove.x = moves[i].x;
+                bestMove.y = moves[i].y;
+            }
         }
+    }
+    //search for min
+    else if (player == UNIT_TYPE_O) {
+        //set default best score
+        bestScore = 24;
+        //loop each available moves
+        for(int i = 0; i < movesCount; ++i) {
+            //test current tile
+            board.tiles[moves[i].y][moves[i].x] = UNIT_TYPE_O;
+
+            //prepare temporary board for testing
+            Board tmpBoard;
+            copy_board(&tmpBoard, board);
+
+            //get score
+            int score = minimax(tmpBoard, depth+1, UNIT_TYPE_X);
+
+            //reset after test
+            board.tiles[moves[i].y][moves[i].x] = UNIT_TYPE_NONE;
+
+            //compare with previous move and get the worst for the opponent
+            if (score < bestScore) {
+                //store move and score
+                bestScore = score;
+                bestMove.x = moves[i].x;
+                bestMove.y = moves[i].y;
+            }
+        }    
     }
 
    if ((bestMove.x == -1) && (bestMove.y == -1))
@@ -143,23 +175,23 @@ void computer_move(Board *board) {
     get_availablemoves(*board, moves, &movesCount);
 
     Point bestMove = { -1, -1 };
-    int bestScore = 26;
+    int bestScore = 24;
 
     //loop each available moves
     for(int i = 0; i < movesCount; ++i) {
         //test current tile
-        board->tiles[moves[i].y][moves[i].x] = 1;
+        board->tiles[moves[i].y][moves[i].x] = UNIT_TYPE_O;
 
         //prepare temporary board for testing
         Board tmpBoard;
         copy_board(&tmpBoard, *board);
 
         //get score
-        int score = minimax(tmpBoard, 0, 0);
+        int score = minimax(tmpBoard, 0, UNIT_TYPE_X);
         printf("Score: %d\n", score); /* ONLY FOR DEBUGGING */
 
         //reset after test
-        board->tiles[moves[i].y][moves[i].x] = -1;
+        board->tiles[moves[i].y][moves[i].x] = UNIT_TYPE_NONE;
 
         //compare with previous move and get the worst
         if (score < bestScore) {
