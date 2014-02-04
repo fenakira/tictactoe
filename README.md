@@ -3,7 +3,9 @@ tictactoe
 
 5x5 Tic Tac Toe
 
-## Program Specification
+Program Specification
+---------------------
+
 Platform: MinGW
 
 Compiled with: GCC 4.7.2
